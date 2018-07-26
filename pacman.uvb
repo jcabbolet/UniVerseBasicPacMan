@@ -1,0 +1,767 @@
+* (C) Jeroen Cabbolet
+PROGRAM pacman
+EXECUTE "SET.TERM.TYPE vt220 WIDTH 132 LENGTH 65"
+   factor  = 3
+*   stopFlag = @TRUE
+*   LOOP
+*      INPUTIF @(0,0):theKey,1 THEN
+*         CRT TIME():" allkeys = ":SEQ(theKey)
+*         stopFlag = (UPCASE(theKey) = "Q")
+*      END
+*   UNTIL stopFlag
+*   REPEAT
+
+
+
+   DIM maze( 4,21),world(23*factor,21*factor)
+   DIM ghostLocX(4),ghostLocY(4)
+   DIM ghostMoveX(4),ghostMoveY(4), ghostMoveTimeInterval(4) , lastTimeGhostMove(4)
+   DIM ghostPrisonTimer(4),ghostBoxed(4),flipFlopGhost(4)
+   MAT world = ' '
+   quiteNowFlag = @FALSE
+   secondsToEat = 20
+   secondsInBox   = secondsToEat * 1.1
+   ghostSpeed = .12
+   pacmanSpeed = .1
+   topY = 5
+   topX = 5
+   RANDOMIZE ( TIME () )
+   validKeys = 8:@FM:6:@FM:4:@FM:2
+   stopFlag = @FALSE
+   debugFlag = @FALSE
+   worldResetFlag = @TRUE
+   points = 0
+   livesLeft = 2
+
+   SpritePacmanRight    = "/-\"
+   SpritePacmanRight<-1>= "|'<"
+   SpritePacmanRight<-1>= "\_/"
+
+   SpritePacmanMiddle    = "/-\"
+   SpritePacmanMiddle<-1>= "|'|"
+   SpritePacmanMiddle<-1>= "\_/"
+
+   SpritePacmanLeft    = "/-\"
+   SpritePacmanLeft<-1>= ">'|"
+   SpritePacmanLeft<-1>= "\_/"
+
+   SpriteGhostNormal     = "/W\"
+   SpriteGhostNormal<-1> = '|"|'
+   SpriteGhostNormal<-1> = '|M|'
+
+   SpriteGhostEatable     = '/-\'
+   SpriteGhostEatable<-1> = '|+|'
+   SpriteGhostEatable<-1> = '|_|'
+
+   SpriteGhostEaten     = ' - '
+   SpriteGhostEaten<-1> = '-+-'
+   SpriteGhostEaten<-1> = ' - '
+
+   SpriteCherry     = '-V-'
+   SpriteCherry<-1> = '| |'
+   SpriteCherry<-1> = 'O O'
+
+   SpriteWorldEmpty     = '   '
+   SpriteWorldEmpty<-1> = '   '
+   SpriteWorldEmpty<-1> = '   '
+
+   SpriteWorldWall     = '111'
+   SpriteWorldWall<-1> = '111'
+   SpriteWorldWall<-1> = '111'
+
+
+   SpriteWorldWall2     = '222'
+   SpriteWorldWall2<-1> = '   '
+   SpriteWorldWall2<-1> = '   '
+
+   SpriteWorldCookie     = '   '
+   SpriteWorldCookie<-1> = ' . '
+   SpriteWorldCookie<-1> = '   '
+
+   SpriteWorldBigCookie     = '   '
+   SpriteWorldBigCookie<-1> = ' O '
+   SpriteWorldBigCookie<-1> = '   '
+
+
+   a=1
+   maze(1,a) = "1111111111111111111"; a+=1
+   maze(1,a) = "1000010000000100001"; a+=1
+   maze(1,a) = "1o110101111101011o1"; a+=1
+   maze(1,a) = "1000000000000000001"; a+=1
+   maze(1,a) = "1101011101011101011"; a+=1
+   maze(1,a) = "  010000010000010  "; a+=1
+   maze(1,a) = "110111 11111 111011"; a+=1
+   maze(1,a) = "110             011"; a+=1
+   maze(1,a) = "110111 12221 111011"; a+=1
+   maze(1,a) = "1101   1   1   1011"; a+=1
+   maze(1,a) = "1101 1 11111 1 1011"; a+=1
+   maze(1,a) = "  0  1       1  0  "; a+=1
+   maze(1,a) = "11011111 1 11111011"; a+=1
+   maze(1,a) = "1100000  1  0000011"; a+=1
+   maze(1,a) = "1101110111110111011"; a+=1
+   maze(1,a) = "1000000000000000001"; a+=1
+   maze(1,a) = "1011011101011101101"; a+=1
+   maze(1,a) = "1011010001000101101"; a+=1
+   maze(1,a) = "1o110101111101011o1"; a+=1
+   maze(1,a) = "1000000000000000001"; a+=1
+   maze(1,a) = "1111111111111111111"; a+=1
+
+   a=1
+   maze(2,a) = "1111111111111111111"; a+=1
+   maze(2,a) = "     100000001     "; a+=1
+   maze(2,a) = "1111 101111101 1111"; a+=1
+   maze(2,a) = "1o000000010000000o1"; a+=1
+   maze(2,a) = "1011110101010111101"; a+=1
+   maze(2,a) = "1010000100010000101"; a+=1
+   maze(2,a) = "100011 11111 110001"; a+=1
+   maze(2,a) = "111011       110111"; a+=1
+   maze(2,a) = "100001 12221 100001"; a+=1
+   maze(2,a) = "10110  1   1  01101"; a+=1
+   maze(2,a) = "100101 11111 101001"; a+=1
+   maze(2,a) = "110101       101011"; a+=1
+   maze(2,a) = "1101011 111 1101011"; a+=1
+   maze(2,a) = "1100000011100000011"; a+=1
+   maze(2,a) = "1101111011101111011"; a+=1
+   maze(2,a) = "  000100000001000  "; a+=1
+   maze(2,a) = "1101010111110101011"; a+=1
+   maze(2,a) = "1o010000010000010o1"; a+=1
+   maze(2,a) = "1011011101011101101"; a+=1
+   maze(2,a) = "1000000000000000001"; a+=1
+   maze(2,a) = "1111111111111111111"; a+=1
+
+
+   a=1
+   maze(3,a) = "1111111111111111111"; a+=1
+   maze(3,a) = "1000000100010000001"; a+=1
+   maze(3,a) = "1o111101010101111o1"; a+=1
+   maze(3,a) = "1010000001000000101"; a+=1
+   maze(3,a) = "1000101101011010001"; a+=1
+   maze(3,a) = "1110100000000010111"; a+=1
+   maze(3,a) = " 00011 11111 11000 "; a+=1
+   maze(3,a) = "101             101"; a+=1
+   maze(3,a) = "1011 1 12221 1 1101"; a+=1
+   maze(3,a) = "10   1 1   1 1   01"; a+=1
+   maze(3,a) = "101 11 11111 11 101"; a+=1
+   maze(3,a) = "101             101"; a+=1
+   maze(3,a) = "1011 111 1 111 1101"; a+=1
+   maze(3,a) = "1000010001000100001"; a+=1
+   maze(3,a) = "1101010111110101011"; a+=1
+   maze(3,a) = "1o010000000000010o1"; a+=1
+   maze(3,a) = "1011011101011101101"; a+=1
+   maze(3,a) = "1000010001000100001"; a+=1
+   maze(3,a) = "1011010111110101101"; a+=1
+   maze(3,a) = "1000010000000100001"; a+=1
+   maze(3,a) = "1111111111111111111"; a+=1
+
+
+   a=1
+   maze(4,a) = "1111111111111111111"; a+=1
+   maze(4,a) = "1000000000000000001"; a+=1
+   maze(4,a) = "1o101101111101101o1"; a+=1
+   maze(4,a) = "1010000100010000101"; a+=1
+   maze(4,a) = "1011010101010101101"; a+=1
+   maze(4,a) = "1000010001000100001"; a+=1
+   maze(4,a) = "11011111 1 11111011"; a+=1
+   maze(4,a) = "110001       100011"; a+=1
+   maze(4,a) = "   101 12221 101   "; a+=1
+   maze(4,a) = "11110  1   1  01111"; a+=1
+   maze(4,a) = "   101 11111 101   "; a+=1
+   maze(4,a) = "110101       101011"; a+=1
+   maze(4,a) = "11000111 1 11100011"; a+=1
+   maze(4,a) = "1101000  1  0001011"; a+=1
+   maze(4,a) = "11011101 1 10111011"; a+=1
+   maze(4,a) = "10000001   10000001"; a+=1
+   maze(4,a) = "1011010111110101101"; a+=1
+   maze(4,a) = "1010010000000100101"; a+=1
+   maze(4,a) = "1o101111010111101o1"; a+=1
+   maze(4,a) = "1000000001000000001"; a+=1
+   maze(4,a) = "1111111111111111111"; a+=1
+
+
+
+
+   mazeMaxX = LEN(maze(1,1))
+   maxX = (mazeMaxX-2)*factor
+   minX = 2
+   mazeMaxY = a-1
+   level=1
+
+   GOSUB showHighScore
+
+
+   resetFlag = @TRUE
+   PROMPT CHAR(0)
+   drawWorldFlag = @TRUE
+   LOOP
+      IF resetFlag THEN
+         GOSUB doReset
+         GOSUB drawWorld
+         resetFlag = @FALSE
+         CRT @(topX+(8*factor)+1,topY+(11*factor)):"R E A D Y":
+         SLEEP 2
+         CRT @(topX+(8*factor)+1,topY+(11*factor)):"         ":
+      END
+
+      GOSUB calculateStopFlag
+
+
+      NAP 10
+
+      totalSteps+=1
+      IF cherryTimer - TIME() <= 0 THEN
+         cherryTimer = 0
+      END
+      FOR liGhost = 1 TO 4
+         IF ghostPrisonTimer(liGhost)-TIME() <= 0 THEN ghostPrisonTimer(liGhost) = 0
+      NEXT liGhost
+
+      IF ghostCapTimer -TIME() <=0 0 THEN
+         ghostCapTimer = 0
+      END
+
+      IF TIME() - lastTimePacmanMove > pacmanSpeed THEN
+         GOSUB doPacmanMove
+      END
+      IF levelFinishedFlag THEN
+         CRT @(11,11): " Level finished !!! well done !(press enter)":
+         INPUT dummy
+
+         points += 500
+         level+=1
+         worldResetFlag = @TRUE
+         resetFlag = @TRUE
+      END ELSE
+         GOSUB moveGhosts
+
+         IF drawWorldFlag THEN
+            GOSUB drawWorld
+            drawWorldFlag = @FALSE
+         END
+      END
+   WHILE NOT( stopFlag)
+
+   REPEAT
+   IF NOT(quiteNowFlag) THEN
+      CRT @(9,9): "Please enter your name: ":
+      INPUT name
+      name=UPCASE(TRIM(name))
+      OPEN "CONFIGS" TO configsFile THEN
+         READU configsRec FROM configsFile , "PACMAN" ELSE
+            configsRec = ''
+         END
+         LOCATE points IN configsRec<1> BY "DR" SETTING pos THEN
+            *NULL
+         END
+         INS points BEFORE configsRec<1,pos>
+         INS name[1,20] BEFORE configsRec<2,pos>
+         configsRec<1> = FIELD(configsRec<1>,@VM,1,40)
+         configsRec<2> = FIELD(configsRec<2>,@VM,1,40)
+         WRITE configsRec TO configsFile , "PACMAN"
+         GOSUB showHighScore
+      END
+      CLOSE configsFile
+   END ELSE
+      CRT @(-1):
+   END
+   STOP
+
+doPacmanMove:
+   keyChar = allKeys[1,1] ; * set the input to the previous input, trying to keep that direction
+
+   HUSH ON
+
+   INPUTIF @(0,0):allKeys,1 THEN
+      IF SEQ(allKeys) = 27 THEN
+         INPUTIF @(0,0):allKeys,1 THEN
+            IF SEQ(allKeys) = 79 THEN
+               INPUTIF @(0,0):allKeys,1 THEN
+               END
+            END
+         END
+
+
+      END
+      CLEARINPUT
+      keyChar = allKeys
+      * buffer = KEYIN()
+   END
+   HUSH OFF
+   posX = pacmanX
+   posY = pacmanY
+   moveDirectionX = pacmanMoveX
+   moveDirectionY = pacmanMoveY
+   type = "PACMAN"
+   liGhost = 1
+   GOSUB doGenericMove
+   pacmanX = posX
+   pacmanY = posY
+   pacmanMoveX = moveDirectionX
+   pacmanMoveY = moveDirectionY
+
+   lastTimePacmanMove = TIME()
+   drawWorldFlag = @TRUE
+   RETURN
+
+doGenericMove:
+   x = posX
+   y = posY
+   GOSUB showWorldSprite
+
+   oldMoveDirectionX = moveDirectionX
+   oldMoveDirectionY = moveDirectionY
+   BEGIN CASE
+      CASE keyChar = 5 OR DOWNCASE(keyChar) = "q"
+         stopFlag = @TRUE
+         quiteNowFlag = @TRUE
+      CASE keyChar = 8 OR keyChar = "r" OR SEQ(keyChar) = 65
+         moveDirectionX = 0
+         moveDirectionY = -1
+      CASE keyChar = 4 OR keyChar = "d" OR SEQ(keyChar) = 68
+         moveDirectionX = -1
+         moveDirectionY = 0
+      CASE keyChar = 2 OR keyChar = "c" OR SEQ(keyChar) = 66
+         moveDirectionX = 0
+         moveDirectionY = 1
+      CASE keyChar = 6 OR keyChar = "f" OR SEQ(keyChar) = 67
+         moveDirectionX = 1
+         moveDirectionY = 0
+   END CASE
+   x = posX+moveDirectionX
+   y = posY+moveDirectionY
+
+   GOSUB checkLegalMove
+   IF NOT(moveLegalFlag ) THEN
+      moveDirectionX = oldMoveDirectionX
+      moveDirectionY = oldMoveDirectionY
+      x = posX+moveDirectionX
+      y = posY+moveDirectionY
+      GOSUB checkLegalMove
+   END
+   IF moveLegalFlag THEN
+      posX += moveDirectionX
+      posY += moveDirectionY
+      IF type = "PACMAN" THEN
+         GOSUB clearWorld
+      END
+      IF posX < minX THEN
+         posX = maxX
+      END
+      IF posX > maxX THEN
+         posX = minX
+      END
+      IF type = "PACMAN" THEN
+         GOSUB clearWorld
+      END
+   END
+   IF debugFlag THEN
+      CRT @(0,0):'keyChar=':SEQ(keyChar):' X=':moveDirectionX:" Y=":moveDirectionY:'w=':world(posX+moveDirectionX,posY+moveDirectionY):' posX=':posX:' liGhost=':liGhost:' posY=':posY:
+      CRT "pos = ":world(posX,posY):' moveLegalFlag=':moveLegalFlag:
+      * CRT " bigCookieFlag =":bigCookieFlag:"cookieFlag = ":cookieFlag
+   END
+   IF type="PACMAN" THEN
+      BEGIN CASE
+
+         CASE bigCookieFlag
+            ghostCapTimer = TIME() + secondsToEat
+            ghostPoints = 100
+            points +=5
+            takenLevelPoints += 1
+         CASE cookieFlag
+            points +=1
+            takenLevelPoints += 1
+
+      END CASE
+      IF takenLevelPoints = totalLevelPoints THEN
+         levelFinishedFlag = @TRUE
+      END
+   END
+
+
+   RETURN
+
+moveGhosts:
+   type = "GHOST"
+   FOR liGhost = 1 TO 4
+      doMoveFlag = (( TIME() - lastTimeGhostMove(liGhost) ) > ghostMoveTimeInterval(liGhost) )
+      IF doMoveFlag THEN
+         IF debugFlag THEN
+            CRT @(3,4):"ghostPrisonTimer = ":ghostPrisonTimer(liGhost):" move? = ":doMoveFlag:"  a = ":a:" T=":TIME():" lastTimeGhostMove(":liGhost:") = ":lastTimeGhostMove(liGhost) :" ghostMoveTimeInterval= ":ghostMoveTimeInterval(liGhost)
+         END
+         posX = ghostLocX(liGhost)
+         posY = ghostLocY(liGhost)
+
+         moveDirectionX = ghostMoveX(liGhost)
+         moveDirectionY = ghostMoveY(liGhost)
+         moveLegalFlag = @TRUE
+
+         IF ghostPrisonTimer(liGhost) > 0 THEN
+            goalX = 9 * factor
+            goalY = 9 * factor
+         END ELSE
+            goalX = pacmanX
+            goalY = pacmanY
+         END
+         BEGIN CASE
+            CASE ( posY < goalY) AND (posX < goalX )
+                * we do down and right
+                possibleKeys =2:@FM:2:@FM:6:@FM:6:@FM:4:@FM:8
+            CASE (posY < goalY )
+                * we do down and left
+                possibleKeys =4:@FM:4:@FM:2:@FM:2:@FM:8:@FM:6
+            CASE ( posX < goalX)
+                * we do up and right
+                possibleKeys =6:@FM:6:@FM:8:@FM:8:@FM:2:@FM:4
+            CASE 1
+                * we do up and left
+                possibleKeys =8:@FM:8:@FM:4:@FM:4:@FM:6:@FM:2
+         END CASE
+
+         moveLegalFlag = @FALSE; * so try to move in the right direction !
+
+         IF ghostBoxed(liGhost) THEN
+            * try going up !
+            possibleKeys =8:@FM:8:@FM:4:@FM:6:@FM:2
+         END
+
+         GOSUB fileterReverseDirection
+
+         LOOP
+            IF NOT(moveLegalFlag) OR (RND(10) = 1) THEN
+               * a =  FIELD( TIME() , '.' , 2 )
+               * b = RND(DIV(a,2500) + 1)+1
+               b = RND(DCOUNT(possibleKeys,@FM)+1) + 1
+               keyChar = possibleKeys<b>
+               IF MOD(keyChar,2) <> 0 THEN
+                  CRT "weird !!!":
+                  INPUT dummy
+               END
+               IF debugFlag THEN
+                  CRT @(3,4):"keyChar = ":keyChar:" a= ":a:'  b=':b:" ":
+               END
+               * CRT @(5,5):"press key":
+               * INPUT dummy
+               * IF UPCASE(dummy) = "Q" THEN STOP
+            END ELSE
+               keyChar = ''
+               * keep same direction
+            END
+            GOSUB doGenericMove
+            IF debugFlag THEN
+               CRT @(1,1):@(-4):
+               CRT @(3+(liGhost*20),3):"ghost":liGhost:" x=":ghostLocX(liGhost):"y=":ghostLocY(liGhost):" ":
+            END
+         UNTIL moveLegalFlag
+            * CRT @(1,1):"illegal move !!":liGhost
+            LOCATE keyChar IN possibleKeys SETTING pos THEN
+               DEL possibleKeys<pos>
+            END
+         REPEAT
+         ghostLocX(liGhost) = posX
+         ghostLocY(liGhost) = posY
+         ghostMoveX(liGhost) = moveDirectionX
+         ghostMoveY(liGhost) = moveDirectionY
+         IF ( ghostLocX(liGhost) = 9*factor ) AND ( ghostLocY(liGhost) = 9 * factor ) THEN
+            ghostBoxed(liGhost) = 1
+         END
+
+         IF ( ghostLocX(liGhost) = 9*factor ) AND ( ghostLocY(liGhost) = 7 * factor ) THEN
+            ghostBoxed(liGhost) = 0
+         END
+
+         lastTimeGhostMove(liGhost) = TIME()
+         drawWorldFlag = @TRUE
+      END
+   NEXT liGhost
+
+   RETURN
+
+drawWorld:
+   IF debugFlag THEN
+      CRT @(10,1): 'Steps: ': FMT(totalSteps,'6R'):
+   END
+   CRT @(20,2): 'Lives: ': livesLeft:
+   CRT @(30,2):'Points: ':FMT(points,'6R'):
+   IF debugFlag THEN
+      CRT " totalLevelPoints":totalLevelPoints:" takenLevelPoints = ":takenLevelPoints
+   END
+   IF resetFlag THEN
+      FOR liY = 0 TO ((mazeMaxY)*factor ) -1
+         CRT @(topX,topY+liY):
+         FOR liX = 0 TO ((mazeMaxX)*factor) -1
+            theChar = world(1+liX,1+liY)
+            IF (theChar = 1 ) OR (theChar = 2) THEN
+               CRT @(-13):' ':@(-14):
+            END ELSE
+               CRT theChar:
+            END
+         NEXT liX
+      NEXT liY
+   END
+   * Paint pacman
+   x = pacmanX
+   y = pacmanY
+   type = "PACMAN"
+   liTempGhost = 1
+   GOSUB displaySprite
+
+   * Paint ghosts:
+   FOR liTempGhost = 1 TO 4
+      x = ghostLocX(liTempGhost)
+      y = ghostLocY(liTempGhost)
+      type = "GHOST"
+      GOSUB displaySprite
+   NEXT liTempGhost
+
+   CRT @(0,0):
+   RETURN
+
+
+calculateStopFlag:
+   GOSUB setGhostCapTimer
+   FOR liTempGhost = 1 TO 4
+      FOR liX = 1 TO factor
+         FOR liY = 1 TO factor
+            IF (ghostLocX(liTempGhost)+liX-1= pacmanX ) AND ( ghostLocY(liTempGhost)+liY-1 = pacmanY ) THEN
+
+               IF ( ghostCapTimer > 0 )  THEN
+                  IF ( ghostPrisonTimer(liTempGhost) = 0 ) THEN
+                     * only get points one for eating a ghost
+                     points += ghostPoints
+                     ghostPoints = ghostPoints*2
+                     ghostPrisonTimer(liTempGhost) = TIME() + secondsInBox
+                  END
+               END ELSE
+
+                  livesLeft -=1
+                  IF livesLeft > 0 THEN
+                     resetFlag = @TRUE
+                  END ELSE
+                     stopFlag = @TRUE
+                  END
+               END
+            END
+         NEXT liY
+      NEXT liX
+   NEXT liTempGhost
+
+   RETURN
+
+doReset:
+   pacmanMoveX = -1
+   pacmanMoveY = 0
+   MAT flipFlopGhost = @FALSE
+   lastTimePacmanMove = 0
+   pacmanX = 9* factor
+   pacmanY = 15* factor
+   allKeys = ''
+   ghostLocX(1) = 9 * factor
+   ghostLocY(1) = 7* factor
+   ghostLocX(2) = 8* factor
+   ghostLocY(2) = 9* factor
+   ghostLocX(3) = 9* factor
+   ghostLocY(3) = 9* factor
+   ghostLocX(4) = 10* factor
+   ghostLocY(4) = 9* factor
+
+   MAT ghostBoxed = 1
+   ghostBoxed(1) = 0
+   MAT lastTimeGhostMove = 0
+   ghostCapTimer = 0
+   MAT ghostPrisonTimer = 0
+   MAT ghostMoveX = 0
+   MAT ghostMoveY = 1
+
+   GOSUB setGhostCapTimer
+
+   IF worldResetFlag THEN
+      mazeNumber = MOD(level,4)
+      IF mazeNumber = 0 THEN mazeNumber = 4
+      totalLevelPoints = 0
+      takenLevelPoints = 0
+      levelFinishedFlag = @FALSE
+      worldResetFlag = @FALSE
+      FOR liYCount = 0 TO mazeMaxY-1
+         FOR liXCount = 0 TO mazeMaxX-1
+            theChar = maze(mazeNumber,liYCount+1)[liXCount+1,1]
+            BEGIN CASE
+               CASE theChar = 1
+                  theSprite = SpriteWorldWall
+
+               CASE theChar = 2
+                  theSprite = SpriteWorldWall2
+
+               CASE theChar = 0
+                  theSprite = SpriteWorldCookie
+                  totalLevelPoints += 1
+
+               CASE theChar = ' '
+                  theSprite = SpriteWorldEmpty
+
+               CASE theChar = "o"
+                  theSprite = SpriteWorldBigCookie
+                  totalLevelPoints += 1
+            END CASE
+            FOR liCount1 = 1 TO factor
+               FOR liCount2 = 1 TO factor
+                  world((liXCount*factor)+liCount2,(liYCount*factor)+liCount1) = theSprite<liCount1>[liCount2,1]
+               NEXT liCount2
+            NEXT liCount1
+         NEXT liXCount
+      NEXT liYCount
+      CRT @(0,0):@(-1):"Move: 2,4,6,8 or DC,D,F,R , Quit = 5 or Q":
+      totalSteps = 0
+      cherryTimer = 0
+      cherryX = 1 * factor
+      cherryY = 9 * factor
+      cherryMoveX = 1
+      cherryMoveY = 0
+   END
+
+   RETURN
+
+
+
+displaySprite:
+* IN: type, theChar, x,y , liGhost
+   printFlag = @TRUE
+   BEGIN CASE
+      CASE type = "GHOST" AND ghostCapTimer > 0 AND ghostPrisonTimer(liTempGhost) = 0
+         theSprite = SpriteGhostEatable
+         IF ghostCapTimer -TIME() < 20.5 THEN
+            flipFlopGhost(liTempGhost) = ( MOD(FIELD(TIME(),'.',2),500) < 250)
+            IF flipFlopGhost(liTempGhost) THEN
+               theSprite = SpriteGhostNormal
+            END
+         END
+
+      CASE type = "GHOST" AND ghostPrisonTimer(liTempGhost) > 0
+         theSprite = SpriteGhostEaten
+      CASE type = "GHOST"
+         theSprite = SpriteGhostNormal
+         flipFlopGhost(liTempGhost) = @FALSE
+
+      CASE type = "PACMAN" AND MOD(totalSteps,2) = 0
+         theSprite = SpritePacmanMiddle
+
+      CASE type = "PACMAN" AND pacmanMoveX = -1
+         theSprite = SpritePacmanLeft
+
+      CASE type = "PACMAN"
+         theSprite = SpritePacmanRight
+
+      CASE type = "CHERRY"
+         theSprite = SpriteCherry
+
+   END CASE
+   IF printFlag THEN
+      FOR liLine = 1 TO factor
+         CRT @(topX+x,topY+y+liLine-1):theSprite<liLine>:
+      NEXT liLine
+   END
+   RETURN
+
+
+checkLegalMove:
+   moveLegalFlag = @TRUE
+   bigCookieFlag = @FALSE
+   cookieFlag = @FALSE
+   FOR liX = 1 TO factor
+      FOR liY = 1 TO factor
+         worldChar = world(x+liX, y+liY)
+         BEGIN CASE
+            CASE type = "GHOST" AND ( ghostBoxed(liGhost) OR  (ghostPrisonTimer(liGhost) > 0 ) )
+               moveLegalFlag = (worldChar <> 1)
+            CASE 1
+               moveLegalFlag = (worldChar <> 1) AND (worldChar <> 2)
+         END CASE
+         IF worldChar = '.' THEN cookieFlag = @TRUE
+         IF worldChar = 'O' THEN bigCookieFlag = @TRUE
+      UNTIL( moveLegalFlag = @FALSE)
+      NEXT liY
+   UNTIL( moveLegalFlag = @FALSE)
+   NEXT liX
+
+   IF NOT (moveLegalFlag) THEN
+      cookieFlag = @FALSE
+      bigCookieFlag = @FALSE
+   END
+
+   RETURN
+
+clearWorld:
+   FOR liX = 1 TO factor
+      FOR liY = 1 TO factor
+         world(x+liX, y+liY) = ' '
+      NEXT liY
+   NEXT liX
+   RETURN
+
+showWorldSprite:
+
+   FOR liY = 1 TO factor
+      CRT @(topX+x,topY+y-1+liY):
+      FOR liX = 1 TO factor
+         theChar = world(x+liX, y+liY)
+         IF theChar = "2" THEN
+            CRT @(-13):' ':@(-14):
+         END ELSE
+            CRT theChar:
+         END
+      NEXT liX
+   NEXT liY
+
+   RETURN
+
+setGhostCapTimer:
+   IF ( ghostCapTimer > 0 )  THEN
+      ghostMoveTimeInterval(1) = (ghostSpeed * 8/10) * 2
+      ghostMoveTimeInterval(2) = (ghostSpeed * 9/10) * 2
+      ghostMoveTimeInterval(3) = ghostSpeed * 2
+      ghostMoveTimeInterval(4) = ghostSpeed * 2
+   END ELSE
+      ghostMoveTimeInterval(1) = ghostSpeed * 8/10
+      ghostMoveTimeInterval(2) = ghostSpeed * 9/10
+      ghostMoveTimeInterval(3) = ghostSpeed
+      ghostMoveTimeInterval(4) = ghostSpeed
+   END
+
+   RETURN
+
+fileterReverseDirection:
+   BEGIN CASE
+      CASE moveDirectionY = 1 AND moveDirectionX = 0
+         oppositeKeys = 8
+      CASE moveDirectionY = -1 AND moveDirectionX = 0
+         oppositeKeys = 2
+      CASE moveDirectionX = -1 AND moveDirectionY = 0
+         oppositeKeys = 6
+      CASE moveDirectionX = 1 AND moveDirectionY = 0
+         oppositeKeys = 4
+   END CASE
+   maxCount = DCOUNT(possibleKeys,@FM)
+   FOR liCount = maxCount TO  1 STEP -1
+      IF possibleKeys<liCount> = oppositeKeys THEN DEL possibleKeys<liCount>
+   NEXT liCount
+
+
+   RETURN
+showHighScore:
+   CRT @(-1):
+   CRT @(30,0):"HIGH SCORES ... ":
+   OPEN "CONFIGS" TO configsFile THEN
+      READ configsRec FROM configsFile , "PACMAN" ELSE
+         configsRec = ''
+      END
+   END
+   CLOSE configsFile
+   FOR liCount = 1 TO 40
+      name= configsRec<2,liCount>
+      score = configsRec<1,liCount>
+      IF score <> '' THEN
+         CRT @(10,liCount+4):FMT(name[1,20],'22L'):FMT(score,'6R'):
+      END
+   NEXT liCount
+   CRT @(10,50):"Press enter":
+   INPUT dummy
+   RETURN
+END
